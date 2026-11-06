@@ -1,9 +1,9 @@
 
-const { betterAuth } = require("better-auth");
-const { mongodbAdapter } = require("@better-auth/mongo-adapter");
-const { client } = require("./db");
+import { betterAuth } from "better-auth";
+import { mongodbAdapter } from "@better-auth/mongo-adapter";
+import { client } from "./db.js";
 
-const auth = betterAuth({
+export const auth = betterAuth({
   database: mongodbAdapter(client.db("togetherwe"), {
     client,
   }),
@@ -12,5 +12,3 @@ const auth = betterAuth({
 
   baseURL: process.env.BETTER_AUTH_URL,
 });
-
-module.exports = { auth };

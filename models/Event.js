@@ -1,7 +1,5 @@
 
-const { ObjectId } = require("mongodb");
-
-const EVENT_CATEGORIES = [
+export const EVENT_CATEGORIES = [
   "Donation",
   "Social Work",
   "Cleanup",
@@ -11,7 +9,7 @@ const EVENT_CATEGORIES = [
   "Other",
 ];
 
-function createEventDocument(data, user) {
+export function createEventDocument(data, user) {
   return {
     title: data.title.trim(),
     description: data.description.trim(),
@@ -29,7 +27,7 @@ function createEventDocument(data, user) {
   };
 }
 
-function isValidEvent(data) {
+export function isValidEvent(data) {
   return (
     typeof data.title === "string" &&
     data.title.trim().length > 0 &&
@@ -44,9 +42,3 @@ function isValidEvent(data) {
     !Number.isNaN(Date.parse(data.date))
   );
 }
-
-module.exports = {
-  EVENT_CATEGORIES,
-  createEventDocument,
-  isValidEvent,
-};

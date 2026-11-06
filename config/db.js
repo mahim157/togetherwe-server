@@ -1,5 +1,5 @@
 
-const { MongoClient } = require("mongodb");
+import { MongoClient } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
 
@@ -7,11 +7,11 @@ if (!uri) {
   throw new Error("MONGODB_URI is missing from .env file");
 }
 
-const client = new MongoClient(uri);
+export const client = new MongoClient(uri);
 
 let database;
 
-async function connectDB() {
+export async function connectDB() {
   try {
     await client.connect();
 
@@ -26,16 +26,10 @@ async function connectDB() {
   }
 }
 
-function getDB() {
+export function getDB() {
   if (!database) {
     throw new Error("Database is not connected yet");
   }
 
   return database;
 }
-
-module.exports = {
-  connectDB,
-  getDB,
-  client,
-};
