@@ -4,6 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const { connectDB } = require("./config/db");
+const eventRoutes = require("./routes/eventRoutes");
 
 const app = express();
 
@@ -16,12 +17,16 @@ app.use(
 
 app.use(express.json());
 
+// Home route
 app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "TogetherWe Backend is running!",
   });
 });
+
+// Event API routes
+app.use("/api/events", eventRoutes);
 
 const PORT = process.env.PORT || 5000;
 
