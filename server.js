@@ -3,9 +3,10 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+const { connectDB } = require("./config/db");
+
 const app = express();
 
-// Middleware
 app.use(
   cors({
     origin: "http://localhost:3000",
@@ -15,7 +16,6 @@ app.use(
 
 app.use(express.json());
 
-// Test route
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -23,9 +23,19 @@ app.get("/", (req, res) => {
   });
 });
 
-// Server
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`TogetherWe server running on port ${PORT}`);
-});
+async function startServer() {
+  try {
+    await connectDB();
+
+    app.listen(PORT, () => {
+      console.log(`TogetherWe server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+startServer();
