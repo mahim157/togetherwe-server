@@ -1,10 +1,11 @@
 
-const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
+import "dotenv/config";
 
-const { connectDB } = require("./config/db");
-const eventRoutes = require("./routes/eventRoutes");
+import express from "express";
+import cors from "cors";
+
+import { connectDB } from "./config/db.js";
+import eventRoutes from "./routes/eventRoutes.js";
 
 const app = express();
 
@@ -17,7 +18,6 @@ app.use(
 
 app.use(express.json());
 
-// Home route
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -25,7 +25,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// Event API routes
 app.use("/api/events", eventRoutes);
 
 const PORT = process.env.PORT || 5000;

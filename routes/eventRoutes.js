@@ -1,17 +1,35 @@
 
-const express = require("express");
+import express from "express";
 
-const {
+import {
   getAllEvents,
+  getRecentEvents,
+  getEventById,
   createEvent,
-} = require("../controllers/eventController");
+  joinEvent,
+  getJoinedEvents,
+} from "../controllers/eventController.js";
+
+import { verifyUser } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// GET: Get all upcoming events
+// Get all upcoming events
 router.get("/", getAllEvents);
 
-// POST: Create a new event
-router.post("/", createEvent);
+// Get recent 6 events
+router.get("/recent", getRecentEvents);
 
-module.exports = router;
+// Get joined events of the logged-in user
+router.get("/joined", verifyUser, getJoinedEvents);
+
+// Join an event
+router.post("/:id/join", verifyUser, joinEvent);
+
+// Get event details by ID
+router.get("/:id", getEventById);
+
+// Create a new event
+router.post("/", verifyUser, createEvent);
+
+export default router;
