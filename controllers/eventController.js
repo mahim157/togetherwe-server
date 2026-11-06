@@ -1,12 +1,9 @@
 
-const { getDB } = require("../config/db");
-const {
-  createEventDocument,
-  isValidEvent,
-} = require("../models/Event");
+import { getDB } from "../config/db.js";
+import { isValidEvent } from "../models/Event.js";
 
 // Get all upcoming events
-async function getAllEvents(req, res) {
+export async function getAllEvents(req, res) {
   try {
     const db = getDB();
 
@@ -33,7 +30,7 @@ async function getAllEvents(req, res) {
 }
 
 // Create a new event
-async function createEvent(req, res) {
+export async function createEvent(req, res) {
   try {
     const eventData = req.body;
 
@@ -58,8 +55,3 @@ async function createEvent(req, res) {
     });
   }
 }
-
-module.exports = {
-  getAllEvents,
-  createEvent,
-};
