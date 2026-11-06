@@ -34,5 +34,8 @@ function getDB() {
   return database;
 }
 
-module.exports = { connectDB, getDB };
-
+module.exports = {
+  connectDB,
+  getDB,
+  client,
+};
