@@ -1,15 +1,22 @@
 
 import { fromNodeHeaders } from "better-auth/node";
+import {
+  createRemoteJWKSet,
+  jwtVerify,
+} from "jose";
+
 import { auth } from "../config/auth.js";
 
+// JWKS public key cache
+let JWKS = null;
+
+// Existing session-based authentication
 export async function verifyUser(req, res, next) {
   try {
-    // Verify the Better Auth session
     const session = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),
     });
 
-    // Reject requests without a valid session
     if (!session || !session.user) {
       return res.status(401).json({
         success: false,
@@ -17,17 +24,106 @@ export async function verifyUser(req, res, next) {
       });
     }
 
-    // Attach authenticated user information
     req.user = session.user;
     req.session = session.session;
 
     next();
   } catch (error) {
-    console.error("Authentication error:", error);
+    console.error("Session authentication error:", error);
 
     return res.status(500).json({
       success: false,
       message: "Authentication verification failed",
+    });
+  }
+}
+
+// JWT-based authentication
+export async function verifyJWT(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Access denied. JWT token is required.",
+      });
+    }
+
+    const token = authHeader.slice(7).trim();
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid authorization header.",
+      });
+    }
+
+    const baseURL = process.env.BETTER_AUTH_URL?.replace(/\/+$/, "");
+
+    if (!baseURL) {
+      return res.status(500).json({
+        success: false,
+        message: "Better Auth URL is not configured.",
+      });
+    }
+
+    // Construct JWKS URL
+    const jwksUrl = new URL("/api/auth/jwks", baseURL);
+
+    console.log("Better Auth Base URL:", baseURL);
+    console.log("JWKS Request URL:", jwksUrl.href);
+
+    // Check JWKS endpoint
+    const jwksResponse = await fetch(jwksUrl);
+
+    console.log("JWKS HTTP Status:", jwksResponse.status);
+
+    if (!jwksResponse.ok) {
+      const responseText = await jwksResponse.text();
+
+      console.log("JWKS Response:", responseText);
+
+      return res.status(500).json({
+        success: false,
+        message: "Could not retrieve JWKS public key.",
+      });
+    }
+
+    // Initialize public key resolver
+    if (!JWKS) {
+      JWKS = createRemoteJWKSet(jwksUrl);
+    }
+
+    // Verify JWT signature, issuer and audience
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer: baseURL,
+      audience: baseURL,
+    });
+
+    if (!payload.email || !payload.sub) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid JWT user information.",
+      });
+    }
+
+    req.user = {
+      id: payload.id || payload.sub,
+      email: payload.email,
+      name: payload.name,
+      image: payload.image,
+    };
+
+    req.jwtPayload = payload;
+
+    next();
+  } catch (error) {
+    console.error("JWT verification failed:", error);
+
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired JWT token.",
     });
   }
 }

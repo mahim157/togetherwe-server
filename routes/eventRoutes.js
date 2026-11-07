@@ -8,28 +8,56 @@ import {
   createEvent,
   joinEvent,
   getJoinedEvents,
+  getMyEvents,
+  updateMyEvent,
+  deleteMyEvent,
 } from "../controllers/eventController.js";
 
-import { verifyUser } from "../middleware/authMiddleware.js";
+import {
+  verifyJWT,
+} from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Get all upcoming events
+// =====================================
+// Public Routes
+// =====================================
+
+// Get all events
 router.get("/", getAllEvents);
 
 // Get recent 6 events
 router.get("/recent", getRecentEvents);
 
-// Get joined events of the logged-in user
-router.get("/joined", verifyUser, getJoinedEvents);
 
-// Join an event
-router.post("/:id/join", verifyUser, joinEvent);
+// =====================================
+// JWT Protected Routes
+// =====================================
 
-// Get event details by ID
-router.get("/:id", getEventById);
+// Get logged-in user's joined events
+router.get("/joined", verifyJWT, getJoinedEvents);
+
+// Get logged-in user's created events
+router.get("/my-events", verifyJWT, getMyEvents);
 
 // Create a new event
-router.post("/", verifyUser, createEvent);
+router.post("/", verifyJWT, createEvent);
+
+// Join an event
+router.post("/:id/join", verifyJWT, joinEvent);
+
+// Update own event
+router.put("/:id", verifyJWT, updateMyEvent);
+
+// Delete own event
+router.delete("/:id", verifyJWT, deleteMyEvent);
+
+
+// =====================================
+// Dynamic Route
+// Always keep this at the bottom
+// =====================================
+
+router.get("/:id", getEventById);
 
 export default router;
