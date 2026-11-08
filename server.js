@@ -12,16 +12,23 @@ import jwtTestRoutes from "./routes/jwtTestRoutes.js";
 
 const app = express();
 
+// Allowed frontend origins
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://togetherwe-client-omega.vercel.app",
+];
+
 // CORS configuration
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: allowedOrigins,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 // Better Auth handler
-// Express 5 compatible route
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 // JSON body parser
