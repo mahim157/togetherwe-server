@@ -21,14 +21,33 @@ const allowedOrigins = [
 // CORS configuration
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests without an origin
+      // and requests from approved frontend URLs
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked this origin: ${origin}`));
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS",
+    ],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
   })
 );
 
 // Better Auth handler
+// Express 5 compatible route
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 // JSON body parser
@@ -48,6 +67,7 @@ app.use("/api/events", eventRoutes);
 // JWT test routes
 app.use("/api/jwt-test", jwtTestRoutes);
 
+// Server port
 const PORT = process.env.PORT || 5000;
 
 // Start server
