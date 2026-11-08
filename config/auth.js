@@ -6,27 +6,35 @@ import { jwt } from "better-auth/plugins";
 import { client } from "./db.js";
 
 export const auth = betterAuth({
+  // MongoDB Database
   database: mongodbAdapter(client.db("togetherwe"), {
     client,
   }),
 
+  // Better Auth Secret
   secret: process.env.BETTER_AUTH_SECRET,
 
+  // Production Backend URL
   baseURL: process.env.BETTER_AUTH_URL,
 
+  // Allowed Frontend Origins
   trustedOrigins: [
     "http://localhost:3000",
     "https://togetherwe-client-omega.vercel.app",
     "https://togetherwe-client-chjjo4ocz-mahim12.vercel.app",
     "https://togetherwe-client-nnthaq4xz-mahim12.vercel.app",
+    "https://togetherwe-client-3z1k4flsb-mahim12.vercel.app",
   ],
 
+  // Email and Password Authentication
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 6,
   },
 
+  // Social Authentication
   socialProviders: {
+    // Google Login
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -34,6 +42,7 @@ export const auth = betterAuth({
       overrideUserInfoOnSignIn: true,
     },
 
+    // GitHub Login
     github: {
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
@@ -47,6 +56,7 @@ export const auth = betterAuth({
           Accept: "application/vnd.github+json",
         };
 
+        // Fetch GitHub Profile
         const profileResponse = await fetch(
           "https://api.github.com/user",
           { headers }
@@ -62,6 +72,7 @@ export const auth = betterAuth({
 
         const profile = await profileResponse.json();
 
+        // Fetch GitHub Emails
         const emailsResponse = await fetch(
           "https://api.github.com/user/emails",
           { headers }
@@ -109,11 +120,13 @@ export const auth = betterAuth({
     },
   },
 
+  // Account Linking
   account: {
     accountLinking: {
       enabled: false,
     },
   },
 
+  // JWT Plugin
   plugins: [jwt()],
 });
