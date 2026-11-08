@@ -16,18 +16,18 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "https://togetherwe-client-omega.vercel.app",
+  "https://togetherwe-client-nnthaq4xz-mahim12.vercel.app",
 ];
 
 // CORS configuration
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests without an origin
-      // and requests from approved frontend URLs
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
+      console.error(`CORS blocked this origin: ${origin}`);
       return callback(new Error(`CORS blocked this origin: ${origin}`));
     },
     credentials: true,
@@ -47,7 +47,6 @@ app.use(
 );
 
 // Better Auth handler
-// Express 5 compatible route
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 // JSON body parser
