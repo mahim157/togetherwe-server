@@ -16,6 +16,9 @@ export const auth = betterAuth({
 
   trustedOrigins: [
     "http://localhost:3000",
+    "https://togetherwe-client-omega.vercel.app",
+    "https://togetherwe-client-chjjo4ocz-mahim12.vercel.app",
+    "https://togetherwe-client-nnthaq4xz-mahim12.vercel.app",
   ],
 
   emailAndPassword: {
@@ -27,18 +30,14 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-
       prompt: "select_account",
-
       overrideUserInfoOnSignIn: true,
     },
 
     github: {
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-
       scope: ["read:user", "user:email"],
-
       overrideUserInfoOnSignIn: true,
 
       getUserInfo: async (token) => {
@@ -48,7 +47,6 @@ export const auth = betterAuth({
           Accept: "application/vnd.github+json",
         };
 
-        // Get GitHub profile
         const profileResponse = await fetch(
           "https://api.github.com/user",
           { headers }
@@ -64,7 +62,6 @@ export const auth = betterAuth({
 
         const profile = await profileResponse.json();
 
-        // Get all verified GitHub email addresses
         const emailsResponse = await fetch(
           "https://api.github.com/user/emails",
           { headers }
@@ -80,12 +77,10 @@ export const auth = betterAuth({
 
         const emails = await emailsResponse.json();
 
-        // Select primary verified email
         const primaryVerifiedEmail = emails.find(
           (item) => item.primary && item.verified
         );
 
-        // Fallback to another verified email
         const verifiedEmail = emails.find(
           (item) => item.verified
         );
@@ -94,21 +89,11 @@ export const auth = betterAuth({
           primaryVerifiedEmail || verifiedEmail;
 
         if (!selectedEmail) {
-          console.error(
-            "No verified GitHub email found."
-          );
+          console.error("No verified GitHub email found.");
           return null;
         }
 
-        console.log(
-          "GitHub Login:",
-          profile.login
-        );
-
-        console.log(
-          "GitHub Primary Verified Email:",
-          selectedEmail.email
-        );
+        console.log("GitHub Login:", profile.login);
 
         return {
           user: {
@@ -118,7 +103,6 @@ export const auth = betterAuth({
             emailVerified: selectedEmail.verified,
             image: profile.avatar_url,
           },
-
           data: profile,
         };
       },
