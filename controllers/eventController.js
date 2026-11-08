@@ -444,6 +444,11 @@ export async function deleteMyEvent(req, res) {
       eventId,
     });
 
+    // Remove bookmark records related to this event
+    await db.collection("eventBookmarks").deleteMany({
+      eventId,
+    });
+
     res.status(200).json({
       success: true,
       message: "Event deleted successfully!",
@@ -454,6 +459,476 @@ export async function deleteMyEvent(req, res) {
     res.status(500).json({
       success: false,
       message: "Failed to delete event",
+    });
+  }
+}
+
+// =====================================
+// Bookmark an event
+// =====================================
+
+export async function bookmarkEvent(req, res) {
+  try {
+    const db = getDB();
+    const user = req.user;
+    const { id } = req.params;
+
+    if (!user || !user.email) {
+      return res.status(401).json({
+        success: false,
+        message: "Please login first",
+      });
+    }
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid event ID",
+      });
+    }
+
+    const eventId = new ObjectId(id);
+
+    const event = await db.collection("events").findOne({
+      _id: eventId,
+    });
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    const bookmarksCollection = db.collection("eventBookmarks");
+
+    const existingBookmark = await bookmarksCollection.findOne({
+      eventId,
+      userEmail: user.email,
+    });
+
+    if (existingBookmark) {
+      return res.status(409).json({
+        success: false,
+        message: "Event is already bookmarked",
+      });
+    }
+
+    await bookmarksCollection.insertOne({
+      eventId,
+      eventTitle: event.title,
+      userEmail: user.email,
+      userName: user.name || "Community Member",
+      bookmarkedAt: new Date(),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Event bookmarked successfully!",
+    });
+  } catch (error) {
+    console.error("Bookmark event error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to bookmark event",
+    });
+  }
+}
+
+// =====================================
+// Remove event bookmark
+// =====================================
+
+export async function removeBookmark(req, res) {
+  try {
+    const db = getDB();
+    const user = req.user;
+    const { id } = req.params;
+
+    if (!user || !user.email) {
+      return res.status(401).json({
+        success: false,
+        message: "Please login first",
+      });
+    }
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid event ID",
+      });
+    }
+
+    const result = await db.collection("eventBookmarks").deleteOne({
+      eventId: new ObjectId(id),
+      userEmail: user.email,
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Bookmark not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Bookmark removed successfully!",
+    });
+  } catch (error) {
+    console.error("Remove bookmark error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to remove bookmark",
+    });
+  }
+}
+
+// =====================================
+// Get logged-in user's bookmarked events
+// =====================================
+
+export async function getBookmarkedEvents(req, res) {
+  try {
+    const db = getDB();
+    const user = req.user;
+
+    if (!user || !user.email) {
+      return res.status(401).json({
+        success: false,
+        message: "Please login first",
+      });
+    }
+
+    const bookmarks = await db
+      .collection("eventBookmarks")
+      .find({
+        userEmail: user.email,
+      })
+      .sort({ bookmarkedAt: -1 })
+      .toArray();
+
+    if (bookmarks.length === 0) {
+      return res.status(200).json({
+        success: true,
+        events: [],
+      });
+    }
+
+    const eventIds = bookmarks.map(
+      (bookmark) => bookmark.eventId
+    );
+
+    const events = await db
+      .collection("events")
+      .find({
+        _id: { $in: eventIds },
+      })
+      .toArray();
+
+    const bookmarkDateMap = new Map(
+      bookmarks.map((bookmark) => [
+        bookmark.eventId.toString(),
+        bookmark.bookmarkedAt,
+      ])
+    );
+
+    const savedEvents = events
+      .map((event) => ({
+        ...event,
+        bookmarkedAt: bookmarkDateMap.get(
+          event._id.toString()
+        ),
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.bookmarkedAt).getTime() -
+          new Date(a.bookmarkedAt).getTime()
+      );
+
+    return res.status(200).json({
+      success: true,
+      events: savedEvents,
+    });
+  } catch (error) {
+    console.error("Get bookmarked events error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch bookmarked events",
+    });
+  }
+}
+
+// =====================================
+// Event Discussion / Comments
+// =====================================
+
+// Get all comments for an event
+export async function getEventComments(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid event ID",
+      });
+    }
+
+    const db = getDB();
+    const eventId = new ObjectId(id);
+
+    const event = await db.collection("events").findOne({
+      _id: eventId,
+    });
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    const comments = await db
+      .collection("eventComments")
+      .find({ eventId })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return res.status(200).json({
+      success: true,
+      comments,
+    });
+  } catch (error) {
+    console.error("Get comments error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch comments",
+    });
+  }
+}
+
+// Add a comment to an event
+export async function addEventComment(req, res) {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+    const user = req.user;
+
+    if (!user || !user.email) {
+      return res.status(401).json({
+        success: false,
+        message: "Please login first",
+      });
+    }
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid event ID",
+      });
+    }
+
+    if (
+      typeof text !== "string" ||
+      text.trim().length < 1 ||
+      text.trim().length > 1000
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Comment must contain 1 to 1000 characters",
+      });
+    }
+
+    const db = getDB();
+    const eventId = new ObjectId(id);
+
+    const event = await db.collection("events").findOne({
+      _id: eventId,
+    });
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    const newComment = {
+      eventId,
+      userId: user.id,
+      userEmail: user.email,
+      userName: user.name || "Community Member",
+      userImage: user.image || null,
+      text: text.trim(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const result = await db
+      .collection("eventComments")
+      .insertOne(newComment);
+
+    return res.status(201).json({
+      success: true,
+      message: "Comment added successfully!",
+      comment: {
+        ...newComment,
+        _id: result.insertedId,
+      },
+    });
+  } catch (error) {
+    console.error("Add comment error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to add comment",
+    });
+  }
+}
+
+// Edit own comment
+export async function updateEventComment(req, res) {
+  try {
+    const { id, commentId } = req.params;
+    const { text } = req.body;
+    const user = req.user;
+
+    if (!user || !user.email) {
+      return res.status(401).json({
+        success: false,
+        message: "Please login first",
+      });
+    }
+
+    if (!ObjectId.isValid(id) || !ObjectId.isValid(commentId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid event or comment ID",
+      });
+    }
+
+    if (
+      typeof text !== "string" ||
+      text.trim().length < 1 ||
+      text.trim().length > 1000
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Comment must contain 1 to 1000 characters",
+      });
+    }
+
+    const db = getDB();
+
+    const result = await db.collection("eventComments").updateOne(
+      {
+        _id: new ObjectId(commentId),
+        eventId: new ObjectId(id),
+        userEmail: user.email,
+      },
+      {
+        $set: {
+          text: text.trim(),
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      const comment = await db.collection("eventComments").findOne({
+        _id: new ObjectId(commentId),
+        eventId: new ObjectId(id),
+      });
+
+      if (!comment) {
+        return res.status(404).json({
+          success: false,
+          message: "Comment not found",
+        });
+      }
+
+      return res.status(403).json({
+        success: false,
+        message: "You can only edit your own comments",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Comment updated successfully!",
+    });
+  } catch (error) {
+    console.error("Update comment error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update comment",
+    });
+  }
+}
+
+// Delete own comment
+export async function deleteEventComment(req, res) {
+  try {
+    const { id, commentId } = req.params;
+    const user = req.user;
+
+    if (!user || !user.email) {
+      return res.status(401).json({
+        success: false,
+        message: "Please login first",
+      });
+    }
+
+    if (!ObjectId.isValid(id) || !ObjectId.isValid(commentId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid event or comment ID",
+      });
+    }
+
+    const db = getDB();
+
+    const result = await db.collection("eventComments").deleteOne({
+      _id: new ObjectId(commentId),
+      eventId: new ObjectId(id),
+      userEmail: user.email,
+    });
+
+    if (result.deletedCount === 0) {
+      const comment = await db.collection("eventComments").findOne({
+        _id: new ObjectId(commentId),
+        eventId: new ObjectId(id),
+      });
+
+      if (!comment) {
+        return res.status(404).json({
+          success: false,
+          message: "Comment not found",
+        });
+      }
+
+      return res.status(403).json({
+        success: false,
+        message: "You can only delete your own comments",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Comment deleted successfully!",
+    });
+  } catch (error) {
+    console.error("Delete comment error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete comment",
     });
   }
 }
