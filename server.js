@@ -16,6 +16,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "https://togetherwe-client-omega.vercel.app",
+  "https://togetherwe-client-chjjo4ocz-mahim12.vercel.app",
   "https://togetherwe-client-nnthaq4xz-mahim12.vercel.app",
 ];
 
@@ -23,12 +24,21 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests without an Origin header
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Allow only approved frontend origins
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
       console.error(`CORS blocked this origin: ${origin}`);
-      return callback(new Error(`CORS blocked this origin: ${origin}`));
+
+      return callback(
+        new Error(`CORS blocked this origin: ${origin}`)
+      );
     },
     credentials: true,
     methods: [
