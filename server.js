@@ -18,6 +18,7 @@ const allowedOrigins = [
   "https://togetherwe-client-omega.vercel.app",
   "https://togetherwe-client-chjjo4ocz-mahim12.vercel.app",
   "https://togetherwe-client-nnthaq4xz-mahim12.vercel.app",
+  "https://togetherwe-client-3z1k4flsb-mahim12.vercel.app",
 ];
 
 // CORS configuration
