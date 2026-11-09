@@ -41,7 +41,6 @@ router.get("/recent", getRecentEvents);
 // Get all comments for an event
 router.get("/:id/comments", getEventComments);
 
-
 // =====================================
 // JWT Protected Routes
 // =====================================
@@ -89,7 +88,6 @@ router.put("/:id", verifyJWT, updateMyEvent);
 
 // Delete own event
 router.delete("/:id", verifyJWT, deleteMyEvent);
-
 
 // =====================================
 // Dynamic Route

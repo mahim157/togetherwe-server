@@ -71,25 +71,6 @@ export async function verifyJWT(req, res, next) {
     // Construct JWKS URL
     const jwksUrl = new URL("/api/auth/jwks", baseURL);
 
-    console.log("Better Auth Base URL:", baseURL);
-    console.log("JWKS Request URL:", jwksUrl.href);
-
-    // Check JWKS endpoint
-    const jwksResponse = await fetch(jwksUrl);
-
-    console.log("JWKS HTTP Status:", jwksResponse.status);
-
-    if (!jwksResponse.ok) {
-      const responseText = await jwksResponse.text();
-
-      console.log("JWKS Response:", responseText);
-
-      return res.status(500).json({
-        success: false,
-        message: "Could not retrieve JWKS public key.",
-      });
-    }
-
     // Initialize public key resolver
     if (!JWKS) {
       JWKS = createRemoteJWKSet(jwksUrl);
@@ -119,7 +100,11 @@ export async function verifyJWT(req, res, next) {
 
     next();
   } catch (error) {
-    console.error("JWT verification failed:", error);
+    console.error("JWT verification failed:", {
+      message: error.message,
+      code: error.code,
+      claim: error.claim,
+    });
 
     return res.status(401).json({
       success: false,
