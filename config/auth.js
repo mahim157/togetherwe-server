@@ -26,6 +26,15 @@ export const auth = betterAuth({
     "https://togetherwe-client-3z1k4flsb-mahim12.vercel.app",
   ],
 
+  // Cross-Origin Cookie Configuration
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+      httpOnly: true,
+    },
+  },
+
   // Email and Password Authentication
   emailAndPassword: {
     enabled: true,
