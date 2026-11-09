@@ -63,12 +63,24 @@ app.all("/api/auth/*splat", toNodeHandler(auth));
 // JSON body parser
 app.use(express.json());
 
-// Backend health check
+// Backend health check + Google Search Console verification
 app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "TogetherWe Backend is running!",
-  });
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta
+          name="google-site-verification"
+          content="xrZD-NJOUttR1Clb9TBdHM-4ZTY_jPCm2kZcBPXSi-c"
+        />
+        <title>TogetherWe Backend</title>
+      </head>
+      <body>
+        <h1>TogetherWe Backend is running!</h1>
+      </body>
+    </html>
+  `);
 });
 
 // Event API routes
