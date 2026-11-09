@@ -1,43 +1,3 @@
-
-import { fromNodeHeaders } from "better-auth/node";
-import {
-  createRemoteJWKSet,
-  jwtVerify,
-} from "jose";
-
-import { auth } from "../config/auth.js";
-
-// JWKS public key cache
-let JWKS = null;
-
-// Existing session-based authentication
-export async function verifyUser(req, res, next) {
-  try {
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-    });
-
-    if (!session || !session.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized! Please login first.",
-      });
-    }
-
-    req.user = session.user;
-    req.session = session.session;
-
-    next();
-  } catch (error) {
-    console.error("Session authentication error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Authentication verification failed",
-    });
-  }
-}
-
 // JWT-based authentication
 export async function verifyJWT(req, res, next) {
   try {
@@ -59,7 +19,10 @@ export async function verifyJWT(req, res, next) {
       });
     }
 
-    const baseURL = process.env.BETTER_AUTH_URL?.replace(/\/+$/, "");
+    // Normalize Better Auth URL
+    const baseURL = process.env.BETTER_AUTH_URL
+      ?.trim()
+      .replace(/\/+$/, "");
 
     if (!baseURL) {
       return res.status(500).json({
@@ -68,15 +31,16 @@ export async function verifyJWT(req, res, next) {
       });
     }
 
-    // Construct JWKS URL
     const jwksUrl = new URL("/api/auth/jwks", baseURL);
 
-    // Initialize public key resolver
     if (!JWKS) {
       JWKS = createRemoteJWKSet(jwksUrl);
     }
 
-    // Verify JWT signature, issuer and audience
+    // Debug expected issuer
+    console.log("Expected JWT issuer:", JSON.stringify(baseURL));
+
+    // Verify JWT
     const { payload } = await jwtVerify(token, JWKS, {
       issuer: baseURL,
       audience: baseURL,
